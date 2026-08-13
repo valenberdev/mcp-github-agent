@@ -2,6 +2,7 @@
   "name": "mcp-github-agent",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "index.js",
   "directories": {
     "test": "tests"
