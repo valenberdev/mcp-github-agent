@@ -6,12 +6,17 @@ vi.mock("../src/github/client.js", () => ({
       repos: {
         listForAuthenticatedUser: vi.fn(),
         createForAuthenticatedUser: vi.fn(),
+        createOrUpdateFileContents: vi.fn(),
+      },
+      issues: {
+        create: vi.fn(),
+        listForRepo: vi.fn(),
       },
     },
   },
 }));
 
-import { listRepositories, createRepository } from "../src/github/operations.js";
+import { listRepositories, createRepository, createIssue, createCommit, listIssues } from "../src/github/operations.js";
 import { octokit } from "../src/github/client.js";
 
 describe("listRepositories", () => {
@@ -45,3 +50,63 @@ describe("createRepository", () => {
     expect(result).toEqual(fakeRepo);
   });
 });
+
+describe ("createIssue", () => {
+  it("crea un issue y devuelve sus datos", async () => {
+    const fakeIssue = { number: 1, title: "Bug encontrado", html_url: "https://github.com/...", state: "open" };
+
+    (octokit.rest.issues.create as any).mockResolvedValue({
+      data: fakeIssue,
+    });
+
+    const result = await createIssue({
+      owner: "usuario",
+      repo: "mi-repo",
+      title: "Bug encontrado",
+    });
+
+    expect(result).toEqual(fakeIssue);
+  });
+});
+
+describe ("createCommit", () => {
+  it("crea un commit y devuelve sus datos", async () => {
+    const fakeCommitResponse = { commit: { sha: "abc123", html_url: "https://github.com/..." } };
+
+    (octokit.rest.repos.createOrUpdateFileContents as any).mockResolvedValue({
+      data: fakeCommitResponse,
+    });
+
+    const result = await createCommit({
+      owner: "usuario",
+      repo: "mi-repo",
+      message: "mensaje",
+      path: "main",
+      content: "contenido"
+    });
+
+    expect(result).toEqual(fakeCommitResponse);
+  });
+});
+
+describe('listIssues', () => { 
+  it("hace un listado de los issues", async () => {
+    const fakeIssues = [
+  { number: 1, title: "Bug 1", html_url: "https://github.com/...", state: "open" },
+  { number: 2, title: "Bug 2", html_url: "https://github.com/...", state: "open" },
+];
+
+    (octokit.rest.issues.listForRepo as any).mockResolvedValue({
+      data: fakeIssues,
+    });
+
+    const result = await listIssues({
+      owner: "usuario",
+      repo: "repo",
+      state: "open",
+      per_page: 5
+    });
+
+    expect(result).toEqual(fakeIssues);
+  });
+ });
