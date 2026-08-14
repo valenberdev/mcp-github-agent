@@ -1,6 +1,8 @@
+import { logger } from "./logging.js";
+
 export async function withRetry<T>(
   operation: () => Promise<T>,
-  maxRetries = 3
+  maxRetries = 3,
 ): Promise<T> {
   let attempt = 0;
 
@@ -16,6 +18,9 @@ export async function withRetry<T>(
       }
 
       const delayMs = 2 ** attempt * 1000;
+      logger.warn(
+        `Rate limit alcanzado, reintentando en ${delayMs}ms (intento ${attempt + 1}/${maxRetries})`,
+      );
       await new Promise((resolve) => setTimeout(resolve, delayMs));
       attempt++;
     }

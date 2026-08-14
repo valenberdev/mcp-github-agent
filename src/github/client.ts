@@ -1,12 +1,13 @@
 import { Octokit } from "@octokit/rest";
 import dotenv from "dotenv";
+import { logger } from "../utils/logging.js";
 
 dotenv.config();
 
 const token = process.env.GITHUB_TOKEN;
 
 if (!token) {
-  console.error("Falta la variable de entorno GITHUB_TOKEN");
+  logger.error("Falta la variable de entorno GITHUB_TOKEN");
   process.exit(1);
 }
 
