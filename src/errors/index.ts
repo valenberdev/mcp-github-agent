@@ -43,12 +43,26 @@ export function handleError(err: any, context?: {resource?: string}): GitHubAPIE
   if (err.status === 404) {
     return new GitHubAPIError( `El ${context?.resource ?? "recurso"} no fue encontrado. Verifica el nombre e intenta de nuevo.`, 404);
   }
-  if (err.status === 401 || err.status === 403) {
-    return new AuthenticationError("No se pudo autenticar con GitHub. Verifica que el token utilizado sea valido.");
+  if (err.status === 401) {
+  return new AuthenticationError("No se pudo autenticar con GitHub. Verifica que el token sea válido y no haya expirado.");
+}
+
+if (err.status === 403) {
+  const isSecondaryRateLimit = typeof err.message === "string" && err.message.toLowerCase().includes("rate limit");
+
+  if (isSecondaryRateLimit) {
+    return new AuthenticationError("GitHub bloqueó temporalmente las solicitudes por exceso de uso. Esperá unos minutos antes de reintentar.");
   }
-  if (err.status === 429) {
-    return new GitHubAPIError("No quedan intentos, espera y se volvera a intentar automaticamente.", 429);
-  }
+
+  return new AuthenticationError("GitHub rechazó la operación por falta de permisos. Verifica que el token tenga los scopes necesarios (repo, user).");
+}
+
+if (err.status === 429) {
+  return new GitHubAPIError(
+    "Se alcanzó el límite de solicitudes a GitHub y se agotaron los reintentos automáticos. Esperá unos minutos antes de volver a intentarlo.",
+    429
+  );
+}
   if (err.status === undefined) {
     return new NetworkError("No hubo respuesta del servidor.");
   }
