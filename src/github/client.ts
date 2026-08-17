@@ -11,4 +11,9 @@ if (!token) {
   process.exit(1);
 }
 
-export const octokit = new Octokit({ auth: token });
+export const octokit = new Octokit({
+  auth: token,
+  request: {
+    timeout: 10000,
+  },
+});
