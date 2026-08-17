@@ -332,7 +332,50 @@ Se probaron y descartaron las siguientes causas:
 
 En **todos** los casos, el error persiste de forma idéntica — lo cual, sumado a que el server funciona correctamente en **MCP Inspector** (con las 5 tools validadas contra la API real de GitHub), indica que la causa está en el cliente MCP de Antigravity sobre Windows, no en la implementación del server.
 
-**Recomendación**: usar MCP Inspector para validar y demostrar el funcionamiento mientras este bug no tenga una solución oficial de Antigravity.
+**Recomendación**: usar MCP Inspector para debugging técnico, y Claude Desktop como host MCP alternativo para demostrar el flujo completo con un LLM real (ver [Evidencia de integración](#evidencia-de-integración)) mientras el bug de Antigravity no tenga una solución oficial.
+
+---
+
+## Evidencia de integración
+
+Además de la validación con MCP Inspector, el server fue conectado y probado en **Claude Desktop** como host MCP alternativo — confirmando que el proyecto es interoperable con cualquier host compatible con el protocolo estándar, no solo con una herramienta puntual.
+
+### Configuración
+
+Mismo mecanismo que con Antigravity (bloque `command`/`args`/`env` en el archivo de configuración del host), pero en la ubicación específica de Claude Desktop:
+
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "github-agent": {
+      "command": "node",
+      "args": ["C:\\ruta\\completa\\a\\mcp-github-agent\\dist\\index.js"],
+      "env": {
+        "GITHUB_TOKEN": "tu_token_aca"
+      }
+    }
+  }
+}
+```
+
+### Escenario 1 — Lectura: `list_repositories`
+
+**Prompt:** *"Listá mis repositorios de GitHub."*
+
+El LLM identificó y ejecutó `list_repositories` sin intervención manual, devolviendo `ok: true` con los repositorios reales de la cuenta autenticada (incluyendo `mcp-github-agent`, con la licencia MIT ya reflejada por GitHub).
+
+### Escenario 2 — Escritura: `create_issue`
+
+**Prompt:** *"Creá un issue en el repo `test-mcp-agent-borrar` como evidencia de escritura end-to-end."*
+
+El LLM identificó y ejecutó `create_issue` con los parámetros correctos (`owner`, `repo`, `title`, `body`), devolviendo `ok: true`. El issue quedó creado y visible en GitHub: [`test-mcp-agent-borrar#2`](https://github.com/valenberdev/test-mcp-agent-borrar/issues/2).
+
+| Escenario | Tool | Resultado |
+| --- | --- | --- |
+| Lectura | `list_repositories` | 10 repositorios devueltos, `ok: true` |
+| Escritura | `create_issue` | Issue #2 creado y visible en GitHub |
 
 ---
 

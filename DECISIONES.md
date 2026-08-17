@@ -41,6 +41,14 @@ Los schemas no solo validan "que no esté vacío" — reflejan reglas reales de 
 
 La API de GitHub devuelve explícitamente `null` en el campo `description` de un repo sin descripción — no omite la clave. `.nullable()` refleja ese comportamiento real; `.optional()` hubiera sido incorrecto.
 
+### Los DTOs de salida se validan en `tools/*.ts`, no en `operations.ts`
+
+Cada handler llama a `DTO.parse(...)` sobre el resultado crudo de `operations.ts`, justo antes de armar `{ ok: true, data }`. La responsabilidad se ubica ahí (y no en `operations.ts`) por el mismo criterio usado para decidir dónde iba la codificación a base64 en `create_commit`: `operations.ts` sabe hablar con Octokit, pero no le corresponde saber cuál es el contrato de salida que el LLM espera — eso es responsabilidad de la capa que orquesta.
+
+Un caso concreto que motivó esta decisión: la respuesta cruda de `createOrUpdateFileContents` (usada en `create_commit`) tiene el `sha` y el `html_url` anidados dentro de `commit: {...}`, mientras que `CommitDTO` los expone planos (`{ sha, html_url }`). El handler de `create-commit.ts` extrae explícitamente esos dos campos del objeto anidado antes de validarlos contra el DTO — la transformación de forma vive en el mismo lugar que la validación de forma.
+
+Como `DTO.parse(...)` lanza una excepción (`ZodError`) si el dato no calza con el schema, `handleError()` tiene una rama específica para reconocer ese caso (`err.name === "ZodError"`) y devolver un mensaje propio, en lugar de que caiga por accidente en la rama de "sin conexión" (que también detecta ausencia de `.status`, un falso positivo si no se contempla este caso aparte).
+
 ---
 
 ## Manejo de errores
@@ -53,6 +61,14 @@ Cada clase representa una causa raíz distinta, para poder dar una respuesta acc
 
 La función `handleError()` transforma cualquier error crudo (de Octokit o de red) en un mensaje pensado para que el LLM se lo pueda repetir directamente al usuario. Ejemplo: un 404 se convierte en *"El repositorio no fue encontrado. Verifica el nombre e intenta de nuevo"*, en vez de propagar el objeto de error de Octokit tal cual.
 
+### El mensaje de 429 describe lo que ya pasó, no lo que va a pasar
+
+`handleError()` solo recibe un error 429 cuando `withRetry()` ya agotó todos sus reintentos — mientras quedan reintentos disponibles, `withRetry()` los consume internamente sin propagar el error hacia arriba. Por eso el mensaje final dice *"se agotaron los reintentos automáticos"*, no que "se va a reintentar" — en el momento en que el usuario lo ve, ya no hay más reintentos pendientes.
+
+### 401 y 403 ya no comparten el mismo mensaje
+
+Un 403 de GitHub no siempre significa token inválido — también puede deberse a un token sin el scope necesario para esa operación puntual, o a un rate limit secundario (detectado buscando la frase "rate limit" en el mensaje de error de Octokit). Cada causa tiene su propio mensaje accionable, en vez de un genérico "verificá tu token" que sería engañoso para los otros dos casos.
+
 ### `context` opcional en `handleError(err, context?)`
 
 Algunas tools operan sobre un recurso puntual (crear un issue en *tal* repo) y otras son lecturas generales (listar los propios repos). Para las primeras, pasar `{ resource: "repositorio" }` permite armar un mensaje de 404 específico. Para `list_repositories`, se decidió **no** pasar contexto: como no hay un repo puntual involucrado en el input, decir "el repositorio no fue encontrado" sería confuso — se prefirió el mensaje genérico de fallback antes que uno específico pero engañoso.
@@ -60,6 +76,10 @@ Algunas tools operan sobre un recurso puntual (crear un issue en *tal* repo) y o
 ### Retry con backoff exponencial solo para 429
 
 `withRetry()` solo reintenta ante rate limiting (status 429). Cualquier otro error (404, 401, etc.) se propaga de inmediato, sin reintentos — reintentar un error que no es transitorio (como un repo inexistente) no lo va a resolver, solo demora la respuesta al usuario. El delay entre reintentos se duplica en cada intento (1s, 2s, 4s...) en lugar de ser fijo, porque reintentar de inmediato dentro de la misma ventana de rate limit agotada es matemáticamente inútil — la API va a seguir rechazando hasta que la ventana se resetee.
+
+### Timeout de 10s en el cliente de Octokit
+
+Sin un límite de tiempo, una llamada que se cuelga (sin fallar, simplemente sin responder) dejaría a `withRetry()` esperando indefinidamente, sin ningún error que capturar ni transformar. El timeout se configuró una sola vez en `client.ts` (opción `request.timeout` de Octokit), de forma que las 5 operaciones lo heredan automáticamente sin tener que repetir la configuración en cada una. Un timeout cumplido no tiene `.status` HTTP (nunca hubo respuesta), así que `handleError()` ya lo clasifica correctamente como `NetworkError` sin necesitar una rama nueva.
 
 ---
 
