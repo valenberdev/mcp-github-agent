@@ -65,9 +65,11 @@ La función `handleError()` transforma cualquier error crudo (de Octokit o de re
 
 `handleError()` solo recibe un error 429 cuando `withRetry()` ya agotó todos sus reintentos — mientras quedan reintentos disponibles, `withRetry()` los consume internamente sin propagar el error hacia arriba. Por eso el mensaje final dice *"se agotaron los reintentos automáticos"*, no que "se va a reintentar" — en el momento en que el usuario lo ve, ya no hay más reintentos pendientes.
 
-### 401 y 403 ya no comparten el mismo mensaje
+### 401 y 403 tienen mensajes distintos y, ahora, clases distintas
 
 Un 403 de GitHub no siempre significa token inválido — también puede deberse a un token sin el scope necesario para esa operación puntual, o a un rate limit secundario (detectado buscando la frase "rate limit" en el mensaje de error de Octokit). Cada causa tiene su propio mensaje accionable, en vez de un genérico "verificá tu token" que sería engañoso para los otros dos casos.
+
+Inicialmente ambos devolvían `AuthenticationError`, pero es una clasificación imprecisa: un 401 es un problema real de credenciales (autenticación), mientras que un 403 ocurre con credenciales *válidas* que la API igual rechaza por falta de permisos o límite de uso — más cercano a un rechazo de la API en sí. Por eso el 403 se reclasificó como `GitHubAPIError(message, 403)`, que además aprovecha el campo `status` que esa clase ya tenía, para mantener la distinción de causas que el resto del diseño de errores persigue.
 
 ### `context` opcional en `handleError(err, context?)`
 

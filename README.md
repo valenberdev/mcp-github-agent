@@ -280,8 +280,9 @@ npm test
 Corre la suite completa con Vitest, repartida en:
 
 - `tests/tools.test.ts` — validación de schemas de Zod (inputs válidos e inválidos)
+- `tests/tools.integration.test.ts` — los 5 handlers completos (validación → operación mockeada → resultado), incluyendo que un input inválido no llega a llamar a Octokit
 - `tests/github.test.ts` — las 5 operaciones de GitHub, con Octokit **mockeado** (sin llamadas reales a la API)
-- `tests/errors.test.ts` — transformación de errores (404, 401, 429, sin conexión) a mensajes en lenguaje natural
+- `tests/errors.test.ts` — transformación de errores (404, 401, 403, 429, sin conexión) a mensajes en lenguaje natural
 - `tests/retry.test.ts` — lógica de backoff exponencial (reintenta ante 429, falla inmediato ante otros errores)
 
 ---

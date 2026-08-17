@@ -1,6 +1,6 @@
 import { CreateCommitInputSchema, CommitDTO } from "../schemas/index.js";
 import { createCommit } from "../github/operations.js";
-import { handleError } from "../errors/index.js";
+import { handleError, ValidationError } from "../errors/index.js";
 import { withRetry } from "../utils/retry.js";
 import type { ToolDefinition } from "../types.js";
 
@@ -14,12 +14,12 @@ export const createCommitTool: ToolDefinition = {
     const parsed = CreateCommitInputSchema.safeParse(args);
 
     if (!parsed.success) {
+      const validationError = new ValidationError(
+        parsed.error.issues[0].message,
+      );
       return {
         ok: false,
-        error: {
-          code: "VALIDATION_ERROR",
-          message: parsed.error.issues[0].message,
-        },
+        error: { code: validationError.code, message: validationError.message },
       };
     }
 

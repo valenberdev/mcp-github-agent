@@ -23,14 +23,19 @@ describe("handleError", () => {
     expect(result.message).toContain("token");
   });
 
-  it("transforma un error 403 en AuthenticationError por falta de permisos", () => {
+  it("transforma un error 403 en GitHubAPIError por falta de permisos", () => {
     const fakeError = { status: 403 };
     const result = handleError(fakeError);
 
-    expect(result).toBeInstanceOf(AuthenticationError);
-    expect(result.code).toBe("AUTHENTICATION_ERROR");
+    expect(result).toBeInstanceOf(GitHubAPIError);
+    expect(result.code).toBe("GITHUB_API_ERROR");
     expect(result.message).toContain("permisos");
+
+    if (result instanceof GitHubAPIError) {
+      expect(result.status).toBe(403);
+    }
   });
+
   it("transforma un error 429 en GitHubAPIError de rate limit", () => {
     const fakeError = { status: 429 };
     const result = handleError(fakeError);

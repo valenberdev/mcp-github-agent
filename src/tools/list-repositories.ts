@@ -1,6 +1,6 @@
 import { ListRepositoriesInputSchema, RepoDTO } from "../schemas/index.js";
 import { listRepositories } from "../github/operations.js";
-import { handleError } from "../errors/index.js";
+import { handleError, ValidationError } from "../errors/index.js";
 import { withRetry } from "../utils/retry.js";
 import type { ToolDefinition } from "../types.js";
 
@@ -14,12 +14,12 @@ export const listRepositoriesTool: ToolDefinition = {
     const parsed = ListRepositoriesInputSchema.safeParse(args);
 
     if (!parsed.success) {
+      const validationError = new ValidationError(
+        parsed.error.issues[0].message,
+      );
       return {
         ok: false,
-        error: {
-          code: "VALIDATION_ERROR",
-          message: parsed.error.issues[0].message,
-        },
+        error: { code: validationError.code, message: validationError.message },
       };
     }
 
