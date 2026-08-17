@@ -1,4 +1,7 @@
-import { ListIssuesInputSchema } from "../schemas/index.js";
+import {
+  ListIssuesInputSchema,
+  ListIssuesOutputDTO,
+} from "../schemas/index.js";
 import { listIssues } from "../github/operations.js";
 import { handleError } from "../errors/index.js";
 import { withRetry } from "../utils/retry.js";
@@ -6,7 +9,8 @@ import type { ToolDefinition } from "../types.js";
 
 export const listIssuesTool: ToolDefinition = {
   name: "list_issues",
-  description: "Lista los issues de un repositorio específico de GitHub, permitiendo filtrar por estado (abiertos, cerrados o todos).",
+  description:
+    "Lista los issues de un repositorio específico de GitHub, permitiendo filtrar por estado (abiertos, cerrados o todos).",
   inputSchema: ListIssuesInputSchema.shape,
 
   handler: async (args) => {
@@ -15,16 +19,23 @@ export const listIssuesTool: ToolDefinition = {
     if (!parsed.success) {
       return {
         ok: false,
-        error: { code: "VALIDATION_ERROR", message: parsed.error.issues[0].message },
+        error: {
+          code: "VALIDATION_ERROR",
+          message: parsed.error.issues[0].message,
+        },
       };
     }
 
     try {
-      const issues = await withRetry(() => listIssues(parsed.data));
-      return { ok: true, data: issues };
+      const rawIssues = await withRetry(() => listIssues(parsed.data));
+      const result = ListIssuesOutputDTO.parse({ items: rawIssues });
+      return { ok: true, data: result };
     } catch (err) {
       const handled = handleError(err, { resource: "repositorio" });
-      return { ok: false, error: { code: handled.code, message: handled.message } };
+      return {
+        ok: false,
+        error: { code: handled.code, message: handled.message },
+      };
     }
   },
 };

@@ -37,6 +37,9 @@ export class GitHubAPIError extends Error {
 }
 
 export function handleError(err: any, context?: {resource?: string}): GitHubAPIError | AuthenticationError | NetworkError {
+  if (err?.name === "ZodError") {
+    return new GitHubAPIError("La respuesta de GitHub tuvo un formato inesperado.", 500);
+  }
   if (err.status === 404) {
     return new GitHubAPIError( `El ${context?.resource ?? "recurso"} no fue encontrado. Verifica el nombre e intenta de nuevo.`, 404);
   }

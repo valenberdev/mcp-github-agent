@@ -1,4 +1,4 @@
-import { CreateIssueInputSchema } from "../schemas/index.js";
+import { CreateIssueInputSchema, IssueDTO } from "../schemas/index.js";
 import { createIssue } from "../github/operations.js";
 import { handleError } from "../errors/index.js";
 import { withRetry } from "../utils/retry.js";
@@ -23,7 +23,8 @@ export const createIssueTool: ToolDefinition = {
     }
 
     try {
-      const issue = await withRetry(() => createIssue(parsed.data));
+      const rawIssue = await withRetry(() => createIssue(parsed.data));
+      const issue = IssueDTO.parse(rawIssue);
       return { ok: true, data: issue };
     } catch (err) {
       const handled = handleError(err, { resource: "repositorio" });
