@@ -277,7 +277,7 @@ La separación entre `client.ts` y `operations.ts` es deliberada: permite mockea
 npm test
 ```
 
-Corre la suite completa con Vitest — 13 tests repartidos en:
+Corre la suite completa con Vitest, repartida en:
 
 - `tests/tools.test.ts` — validación de schemas de Zod (inputs válidos e inválidos)
 - `tests/github.test.ts` — las 5 operaciones de GitHub, con Octokit **mockeado** (sin llamadas reales a la API)
