@@ -144,6 +144,20 @@ Crea un nuevo repositorio en GitHub para el usuario autenticado.
 **Ejemplo de prompt efectivo:**
 > "Creá un repositorio privado llamado `api-clientes` con la descripción 'API interna de gestión de clientes'."
 
+**Output esperado:**
+```json
+{
+  "ok": true,
+  "data": {
+    "full_name": "valenberdev/api-clientes",
+    "html_url": "https://github.com/valenberdev/api-clientes",
+    "private": true,
+    "description": "API interna de gestión de clientes",
+    "owner": { "login": "valenberdev" }
+  }
+}
+```
+
 ---
 
 ### `create_issue`
@@ -162,6 +176,19 @@ Abre un nuevo issue en un repositorio existente.
 **Ejemplo de prompt efectivo:**
 > "Abrí un issue en `valenberdev/api-clientes` con el título 'Falta validación de email' y describí que el endpoint de registro no valida el formato."
 
+**Output esperado:**
+```json
+{
+  "ok": true,
+  "data": {
+    "number": 3,
+    "title": "Falta validación de email",
+    "html_url": "https://github.com/valenberdev/api-clientes/issues/3",
+    "state": "open"
+  }
+}
+```
+
 ---
 
 ### `list_repositories`
@@ -178,6 +205,22 @@ Lista los repositorios del usuario autenticado, con filtros de tipo y orden.
 
 **Ejemplo de prompt efectivo:**
 > "Mostrame mis 10 repositorios privados más recientemente actualizados."
+
+**Output esperado:**
+```json
+{
+  "ok": true,
+  "data": [
+    {
+      "full_name": "valenberdev/api-clientes",
+      "html_url": "https://github.com/valenberdev/api-clientes",
+      "private": true,
+      "description": "API interna de gestión de clientes",
+      "owner": { "login": "valenberdev" }
+    }
+  ]
+}
+```
 
 ---
 
@@ -198,6 +241,17 @@ Crea o actualiza un archivo en un repositorio mediante un commit.
 **Ejemplo de prompt efectivo:**
 > "En el repo `api-clientes`, creá un archivo `docs/setup.md` con instrucciones básicas de instalación, con el mensaje de commit 'Agrega guía de setup'."
 
+**Output esperado:**
+```json
+{
+  "ok": true,
+  "data": {
+    "sha": "a1b2c3d4e5f6...",
+    "html_url": "https://github.com/valenberdev/api-clientes/commit/a1b2c3d4e5f6..."
+  }
+}
+```
+
 ⚠️ **Limitación conocida**: esta tool está pensada principalmente para **crear** archivos nuevos. Actualizar un archivo ya existente puede fallar, porque la API de GitHub requiere el `sha` del blob actual para evitar sobrescribir cambios de otra persona, y esta versión no lo resuelve automáticamente.
 
 ---
@@ -217,6 +271,23 @@ Lista los issues de un repositorio específico.
 
 **Ejemplo de prompt efectivo:**
 > "Listame todos los issues abiertos del repositorio `api-clientes`."
+
+**Output esperado:**
+```json
+{
+  "ok": true,
+  "data": {
+    "items": [
+      {
+        "number": 3,
+        "title": "Falta validación de email",
+        "html_url": "https://github.com/valenberdev/api-clientes/issues/3",
+        "state": "open"
+      }
+    ]
+  }
+}
+```
 
 ---
 
